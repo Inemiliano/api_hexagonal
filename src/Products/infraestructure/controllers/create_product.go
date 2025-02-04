@@ -49,7 +49,7 @@ func CreateProductHandler(w http.ResponseWriter, r *http.Request) {
 
     log.Println("Repositorio MongoDB inicializado")
 
-    // Pasamos correctamente el repositorio que implementa IProductRepository
+   
     useCase := application.NewCreateProduct(repo)
 
     if err := useCase.Execute(product); err != nil {

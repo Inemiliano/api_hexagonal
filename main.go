@@ -2,7 +2,11 @@ package main
 
 import (
 	"api/src/core"
-	"api/src/Products/infraestructure/routes" 
+	"api/src/Users/infraestructure/routes" 
+
+	Products "api/src/Products/infraestructure/routes" 
+	
+	
 	"log"
 	"net/http"
 )
@@ -23,12 +27,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Configurar las rutas
-	routes.SetupRoutes()
 
-	// Log para indicar que el servidor está corriendo
+    Products.SetupRoutes()
+    routes.SetupRoutesUsers()
+
 	log.Println("Servidor escuchando en el puerto 8080...")
 
-	// Iniciar el servidor HTTP en el puerto 8080
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
+
