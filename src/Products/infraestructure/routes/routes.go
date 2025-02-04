@@ -10,4 +10,6 @@ func SetupRoutes() {
 	http.HandleFunc("/getProducts", controllers.GetProductsHandler)
 	http.HandleFunc("/deleteProduct", controllers.DeleteProductHandler)
 	http.HandleFunc("/updateProduct", controllers.UpdateProductHandler)
+
+	http.HandleFunc("/longP", controllers.LongPollingHandler)
 }

@@ -4,7 +4,7 @@ import (
 	"api/src/core"
 	"api/src/Users/infraestructure/routes" 
 
-	Products "api/src/Products/infraestructure/routes" 
+Products "api/src/Products/infraestructure/routes" 
 	
 	
 	"log"
