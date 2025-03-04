@@ -2,7 +2,7 @@ package application
 
 import (
 	"api/src/Products/domain"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	
 )
 
 type UpdateProduct struct {
@@ -13,16 +13,18 @@ func NewUpdateProduct(repo domain.IProductRepository) *UpdateProduct {
 	return &UpdateProduct{repo: repo}
 }
 
-func (up *UpdateProduct) Execute(id primitive.ObjectID, nombre string, precio int16) error {
+func (up *UpdateProduct) Execute(n string,nombre string, precio int16) error {
 	
 	product := &domain.Product{
 		Nombre: nombre,
 		Precio: precio,
 	}
 
-	
-	return up.repo.Update(id, product)
+	// Llamar al método `Update` del repositorio
+	return up.repo.Update(n, product)
 }
+
+
 
 
 
