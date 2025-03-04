@@ -1,15 +1,20 @@
+// routes/products.go
 package routes
 
 import (
 	"api/src/Products/infraestructure/controllers"
-	"net/http"
+	"github.com/gin-gonic/gin"
+
 )
 
-func SetupRoutes() {
-	http.HandleFunc("/products", controllers.CreateProductHandler)
-	http.HandleFunc("/getProducts", controllers.GetProductsHandler)
-	http.HandleFunc("/deleteProduct", controllers.DeleteProductHandler)
-	http.HandleFunc("/updateProduct", controllers.UpdateProductHandler)
+// SetupRoutes configura las rutas
+func SetupRoutes(r *gin.Engine) {
+	
 
-	http.HandleFunc("/longP", controllers.LongPollingHandler)
+	r.POST("/products", controllers.CreateProductHandler)
+	r.GET("/getProducts", controllers.GetProductsHandler)
+	r.DELETE("/deleteProduct/:nombre", controllers.DeleteProductHandler)
+	r.PUT("/updateProduct/:nombre", controllers.UpdateProductHandler)
+
 }
+

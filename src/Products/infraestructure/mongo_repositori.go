@@ -1,14 +1,14 @@
 package infraestructure
 
 import (
-    "api/src/Products/domain"
-    "api/src/core"
-    "context"
-    "log"
-    "time"
-    "go.mongodb.org/mongo-driver/bson"
-    "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/bson/primitive"
+	"api/src/Products/domain"
+	"api/src/core"
+	"context"
+	"log"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type MongoRepository struct {
@@ -22,18 +22,31 @@ func NewMongos() *MongoRepository {
 }
 
 func (r *MongoRepository) Save(p *domain.Product) error {
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-    res, err := r.collection.InsertOne(ctx, p)
-    if err != nil {
-        log.Printf("Error al insertar producto: %v", err)
-        return err
-    }
+	// Obtener un ID autoincrementable
+	newID, err := r.getNextSequence("productid")
+	if err != nil {
+		log.Printf(" Error al obtener el ID autoincrementable: %v", err)
+		return err
+	}
 
-    log.Printf("Producto insertado con éxito con ID: %v", res.InsertedID)
-    return nil
+	// Asignar el nuevo ID al producto
+	p.ID = newID
+
+	// Insertar el producto en la colección de MongoDB
+	res, err := r.collection.InsertOne(ctx, p)
+	if err != nil {
+		log.Printf("Error al insertar el producto: %v", err)
+		return err
+	}
+
+	log.Printf("Producto insertado con éxito con ID: %v", res.InsertedID)
+	return nil
 }
+
+
 
 func (r *MongoRepository) GetAll() ([]domain.Product, error) {
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -47,33 +60,47 @@ func (r *MongoRepository) GetAll() ([]domain.Product, error) {
     defer cursor.Close(ctx)
 
     var products []domain.Product
-    if err = cursor.All(ctx, &products); err != nil {
-        log.Printf("Error al leer los productos: %v", err)
+    for cursor.Next(ctx) {
+        var product domain.Product
+
+        
+        if err := cursor.Decode(&product); err != nil {
+            log.Printf("Error al decodificar un producto: %v", err)
+            continue
+        }
+
+        products = append(products, product)
+    }
+
+    
+    if err := cursor.Err(); err != nil {
+        log.Printf("Error al recorrer los productos: %v", err)
         return nil, err
     }
 
     return products, nil
 }
 
-func (r *MongoRepository) Delete(id primitive.ObjectID) error {
+
+func (r *MongoRepository) Delete(name string) error {
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()
 
-    _, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
+    _, err := r.collection.DeleteOne(ctx, bson.M{"nombre": name})
     if err != nil {
         log.Printf("Error al eliminar el producto: %v", err)
     }
     return err
 }
 
-func (repo *MongoRepository) Update(id primitive.ObjectID, p *domain.Product) error {
+func (r *MongoRepository) Update(id string, p *domain.Product) error {
 	// Crear contexto
 	ctx := context.TODO()
 
-	// Crear filtro para encontrar el documento a actualizar
-	filter := bson.M{"_id": id}
+	// Filtro para encontrar el producto por su ID
+	filter := bson.M{"nombre": id} // Cambiar _id a id, porque ahora es un int
 
-	// Crear actualización
+	// Datos de actualización
 	update := bson.M{
 		"$set": bson.M{
 			"nombre": p.Nombre,
@@ -81,8 +108,8 @@ func (repo *MongoRepository) Update(id primitive.ObjectID, p *domain.Product) er
 		},
 	}
 
-	// Actualizar el producto
-	_, err := repo.collection.UpdateOne(ctx, filter, update)
+	// Ejecutar actualización en MongoDB
+	_, err := r.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		log.Println("Error al actualizar el producto:", err)
 		return err

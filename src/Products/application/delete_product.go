@@ -2,7 +2,6 @@ package application
 
 import (
 	"api/src/Products/domain"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 )
 
@@ -14,16 +13,10 @@ func NewDeleteProduct(repo domain.IProductRepository) *DeleteProduct {
 	return &DeleteProduct{repo: repo}
 }
 
-func (dp *DeleteProduct) Execute(id string) error {
-	// Convertir el ID a ObjectID
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		log.Println("Error al convertir ID a ObjectID:", err)
-		return err
-	}
+func (dp *DeleteProduct) Execute(name string) error {
+	log.Println("Eliminando producto con Nombre:", name)
 
 	
-	return dp.repo.Delete(objID)
+	return dp.repo.Delete(name)
 }
-
 

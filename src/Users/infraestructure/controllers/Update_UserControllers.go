@@ -3,46 +3,53 @@ package controllers
 import (
 	"api/src/Users/domain"
 	"api/src/Users/infraestructure"
-	"encoding/json"
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
-    "go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPut {
-        http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
-        return
-    }
+// UpdateUserHandler maneja la actualización de usuarios con Gin
+func UpdateUserHandler(c *gin.Context) {
+	// Comprobamos que el método sea PUT
+	if c.Request.Method != http.MethodPut {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": "Método no permitido"})
+		return
+	}
 
-    var requestData struct {
-        ID    string `json:"id"`
-        Nombre string `json:"nombre"`
-        Email  string `json:"email"`
-    }
-    if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-        http.Error(w, "Error al procesar el JSON", http.StatusBadRequest)
-        return
-    }
+	// Definimos la estructura para recibir el JSON de la petición
+	var requestData struct {
+		ID     string `json:"id"`
+		Nombre string `json:"nombre"`
+		Email  string `json:"email"`
+	}
 
-    objectID, err := primitive.ObjectIDFromHex(requestData.ID)
-    if err != nil {
-        http.Error(w, "ID inválido", http.StatusBadRequest)
-        return
-    }
+	// Decodificamos el cuerpo de la petición JSON
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al procesar el JSON"})
+		return
+	}
 
-    user := domain.User{
-        ID:     objectID,
-        Name: requestData.Nombre,
-        Email:  requestData.Email,
-    }
+	// Convertimos el ID de string a ObjectID
+	objectID, err := primitive.ObjectIDFromHex(requestData.ID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
 
-    repo := infraestructure.NewMongoUserRepository()
-    err = repo.Update(user.ID, &user)
-    if err != nil {
-        http.Error(w, "Error al actualizar el usuario", http.StatusInternalServerError)
-        return
-    }
+	// Creamos la instancia del usuario con los datos actualizados
+	user := domain.User{
+		ID:     objectID,
+		Name:   requestData.Nombre,
+		Email:  requestData.Email,
+	}
 
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Usuario actualizado correctamente"))
+	// Creamos el repositorio e intentamos actualizar el usuario
+	repo := infraestructure.NewMongoUserRepository()
+	if err := repo.Update(user.ID, &user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar el usuario"})
+		return
+	}
+
+	// Respondemos con un mensaje de éxito
+	c.JSON(http.StatusOK, gin.H{"message": "Usuario actualizado correctamente"})
 }

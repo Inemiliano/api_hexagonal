@@ -3,46 +3,51 @@ package controllers
 import (
 	"api/src/Products/application"
 	"api/src/Products/infraestructure"
-	"api/src/Products/domain" 
-	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-
-	
 )
 
-func UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+// UpdateProductHandler maneja la actualización de productos usando Gin
+func UpdateProductHandler(c *gin.Context) {
+	log.Println("Recibiendo solicitud PUT para actualizar producto")
+
+	nombre := c.Param("nombre")
+	if nombre == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Nombre del producto requerido"})
+		return
+	}
+	// Estructura para recibir los datos del JSON
+	var requestData struct {
+		ID     int    `json:"id"`
+		Nombre string `json:"nombre"`
+		Precio int16  `json:"precio"`
+	}
+
+	// Decodificar JSON
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		log.Printf("Error al procesar el JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error al procesar el JSON"})
 		return
 	}
 
-	// Decodificar el JSON del cuerpo de la solicitud
-	var product domain.Product
-	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
-		http.Error(w, "Error al procesar el JSON", http.StatusBadRequest)
-		return
-	}
-
-	// Verificar que el ID está presente en la solicitud
-	if product.ID.IsZero() {
-		http.Error(w, "ID del producto es requerido en el JSON", http.StatusBadRequest)
-		return
-	}
-
-	// Crear una instancia del repositorio
+	// Crear instancia del repositorio
 	repo := infraestructure.NewMongos()
+	if repo == nil {
+		log.Println("Error al inicializar el repositorio")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error interno del servidor"})
+		return
+	}
 
-	// Llamar al caso de uso para actualizar el producto
+	// Llamar al caso de uso para actualizar
 	useCase := application.NewUpdateProduct(repo)
-	err := useCase.Execute(product.ID, product.Nombre, product.Precio)
+	err := useCase.Execute(nombre,requestData.Nombre, requestData.Precio)
 	if err != nil {
-		log.Println("Error al actualizar el producto:", err)
-		http.Error(w, "Error al actualizar el producto", http.StatusInternalServerError)
+		log.Printf("Error al actualizar el producto: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar el producto"})
 		return
 	}
 
 	// Responder con éxito
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Producto actualizado correctamente"))
+	c.JSON(http.StatusOK, gin.H{"message": "Producto actualizado correctamente"})
 }

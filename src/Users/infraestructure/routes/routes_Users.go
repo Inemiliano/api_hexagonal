@@ -2,13 +2,15 @@ package routes
 
 import (
 	"api/src/Users/infraestructure/controllers"
-	"net/http"
+	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutesUsers(){
-	http.HandleFunc("/users", controllers.CreateUserHandler)
-	http.HandleFunc("/getUsers", controllers.GetUsersHandler)
-	http.HandleFunc("/deleteUsers", controllers.DeleteUserHandler)
-	http.HandleFunc("/updateUsers", controllers.UpdateUserHandler)
+var userUpdates = make(chan struct{}) 
+
+func SetupRoutesUsers(r *gin.Engine) {
+	r.POST("/users", controllers.CreateUserHandler)       
+	r.GET("/getUsers", controllers.GetUsersHandler)        
+	r.DELETE("/deleteUsers", controllers.DeleteUserHandler) 
+	r.PUT("/updateUsers", controllers.UpdateUserHandler)   
 
 }
